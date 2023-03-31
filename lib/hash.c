@@ -28,6 +28,7 @@
 
 #include "bitrotate.h"
 #include "xalloc-oversized.h"
+#include "../fuse-overlayfs.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -81,6 +82,8 @@ struct hash_table
        operation.  It is not clear if the speedup is worth the trouble.  */
     struct obstack entry_stack;
 #endif
+
+    void* user_ptr;
   };
 
 /* A hash table contains many internal entries, each holding a pointer to
@@ -591,7 +594,7 @@ compute_bucket_size (size_t candidate, const Hash_tuning *tuning)
    values.  */
 
 Hash_table *
-hash_initialize (size_t candidate, const Hash_tuning *tuning,
+hash_initialize (void* user_ptr, size_t candidate, const Hash_tuning *tuning,
                  Hash_hasher hasher, Hash_comparator comparator,
                  Hash_data_freer data_freer)
 {
@@ -618,6 +621,7 @@ hash_initialize (size_t candidate, const Hash_tuning *tuning,
          options.  */
       goto fail;
     }
+  table->user_ptr = user_ptr;
 
   table->n_buckets = compute_bucket_size (candidate, tuning);
   if (!table->n_buckets)
@@ -1145,6 +1149,16 @@ hash_delete (Hash_table *table, const void *entry)
   data = hash_find_entry (table, entry, &bucket, true);
   if (!data)
     return NULL;
+
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+
+  if(table->user_ptr) {
+    const struct ovl_node* pnode = table->user_ptr;
+    const struct ovl_node* node = (const struct ovl_node*)entry;
+    fprintf(stderr, "hash_delete: pnode: %p (%s), node: %p (%s)\n", pnode, pnode->name, node, node->name);
+  }
 
   table->n_entries--;
   if (!bucket->data)

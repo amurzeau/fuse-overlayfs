@@ -86,7 +86,7 @@ size_t hash_do_for_each (const Hash_table *, Hash_processor, void *);
 /* Allocation and clean-up.  */
 size_t hash_string (const char *, size_t) _GL_ATTRIBUTE_PURE;
 void hash_reset_tuning (Hash_tuning *);
-Hash_table *hash_initialize (size_t, const Hash_tuning *,
+Hash_table *hash_initialize (void*, size_t, const Hash_tuning *,
                              Hash_hasher, Hash_comparator,
                              Hash_data_freer) _GL_ATTRIBUTE_WUR;
 void hash_clear (Hash_table *);
